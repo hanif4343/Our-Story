@@ -53,6 +53,7 @@ dev_dependencies:
 # release. Pin back to the known-good 5.2.1 until upstream sorts it out.
 dependency_overrides:
   audioplayers_android: 5.2.1
+  flutter_plugin_android_lifecycle: 2.0.33
 
 flutter:
   uses-material-design: true
