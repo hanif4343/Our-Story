@@ -1,107 +1,30 @@
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
-
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
 }
 
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.1.0'
-}
-
-// Release signing configuration.
-//
-// key.properties is never committed (see .gitignore) — it is generated
-// on demand:
-//   • In CI, the release workflow decodes the KEYSTORE_BASE64 secret into
-//     upload-keystore.jks and writes key.properties from the
-//     KEY_ALIAS / KEY_PASSWORD / STORE_PASSWORD secrets before Gradle runs.
-//   • Locally, a developer can create android/key.properties by hand
-//     (storeFile, storePassword, keyAlias, keyPassword) pointing at their
-//     own upload-keystore.jks to produce a properly signed release build.
-//
-// If key.properties is missing (e.g. a fresh clone with no signing
-// material configured yet), release builds fall back to the debug key so
-// `flutter build apk --release` still succeeds locally — but such a build
-// must never be uploaded to Google Play.
-def keystorePropertiesFile = rootProject.file('key.properties')
-def keystoreProperties = new Properties()
-def hasReleaseSigning = keystorePropertiesFile.exists()
-if (hasReleaseSigning) {
-    keystorePropertiesFile.withReader('UTF-8') { reader ->
-        keystoreProperties.load(reader)
-    }
-}
-
-android {
-    namespace "com.hanifsantona.ourstory"
-    compileSdk 36
-    ndkVersion flutter.ndkVersion
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-
-    defaultConfig {
-        applicationId "com.hanifsantona.ourstory"
-        minSdk 23
-        targetSdk 34
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-        multiDexEnabled true
-    }
-
-    signingConfigs {
-        if (hasReleaseSigning) {
-            release {
-                storeFile file(keystoreProperties['storeFile'] ?: 'upload-keystore.jks')
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-            }
-        }
-    }
-
-    buildTypes {
-        release {
-            // Signed with the real upload key whenever key.properties is
-            // present (always true in CI — see the release workflow).
-            // Falls back to the debug key only for local builds that
-            // haven't configured signing yet; such builds are for testing
-            // only and must never be uploaded to Google Play.
-            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
+// Some plugins (e.g. video_thumbnail) ship their own android/build.gradle
+// pinned to an old compileSdk, which fails AAR metadata checks against
+// newer androidx dependencies pulled in by other plugins. Force every
+// Android sub-module to compile against the same SDK as the app itself.
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android.compileSdk = 36
         }
     }
 }
 
-flutter {
-    source '../..'
-}
-
-dependencies {
-    implementation "androidx.multidex:multidex:2.0.1"
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
 }
