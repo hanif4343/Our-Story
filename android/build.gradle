@@ -13,6 +13,18 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Some plugins (e.g. video_thumbnail) ship their own android/build.gradle
+// pinned to an old compileSdk, which fails AAR metadata checks against
+// newer androidx dependencies pulled in by other plugins. Force every
+// Android sub-module to compile against the same SDK as the app itself.
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android.compileSdk = 36
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
