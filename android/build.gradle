@@ -17,10 +17,18 @@ subprojects {
 // pinned to an old compileSdk, which fails AAR metadata checks against
 // newer androidx dependencies pulled in by other plugins. Force every
 // Android sub-module to compile against the same SDK as the app itself.
+// (plugins.withId is used instead of afterEvaluate because ":app" is
+// already evaluated by the time this block runs, due to
+// evaluationDependsOn above — afterEvaluate would throw on it.)
 subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android.compileSdk = 36
+    plugins.withId("com.android.library") {
+        android {
+            compileSdk = 36
+        }
+    }
+    plugins.withId("com.android.application") {
+        android {
+            compileSdk = 36
         }
     }
 }
