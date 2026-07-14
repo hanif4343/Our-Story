@@ -21,6 +21,7 @@ class MoveSceneDialog extends StatelessWidget {
     final result = await showModalBottomSheet<_MoveSceneResult>(
       context: context,
       backgroundColor: AppColors.deepBlue,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => MoveSceneDialog(chapters: chapters, currentChapterId: currentChapterId),
     );
@@ -31,38 +32,52 @@ class MoveSceneDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text('Move to Chapter', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.remove_circle_outline, color: AppColors.mutedWhite),
-              title: const Text('No Chapter', style: TextStyle(color: Colors.white)),
-              trailing: currentChapterId == null ? const Icon(Icons.check, color: AppColors.gold) : null,
-              onTap: () => Navigator.of(context).pop(const _MoveSceneResult(chapterId: null, cancelled: false)),
-            ),
-            if (chapters.isEmpty)
+      // Cap the sheet's height so it never tries to grow taller than the
+      // screen; beyond that cap the chapter list scrolls internally instead
+      // of overflowing (which previously made chapters below the fold
+      // unreachable).
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Text(
-                  'No chapters yet — create one from the Chapters screen first.',
-                  style: TextStyle(color: AppColors.mutedWhite, fontSize: 12),
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text('Move to Chapter', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.remove_circle_outline, color: AppColors.mutedWhite),
+                      title: const Text('No Chapter', style: TextStyle(color: Colors.white)),
+                      trailing: currentChapterId == null ? const Icon(Icons.check, color: AppColors.gold) : null,
+                      onTap: () => Navigator.of(context).pop(const _MoveSceneResult(chapterId: null, cancelled: false)),
+                    ),
+                    if (chapters.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        child: Text(
+                          'No chapters yet — create one from the Chapters screen first.',
+                          style: TextStyle(color: AppColors.mutedWhite, fontSize: 12),
+                        ),
+                      ),
+                    ...chapters.map((chapter) => ListTile(
+                          leading: const Icon(Icons.menu_book_outlined, color: AppColors.gold),
+                          title: Text(chapter.title, style: const TextStyle(color: Colors.white)),
+                          trailing: chapter.id == currentChapterId ? const Icon(Icons.check, color: AppColors.gold) : null,
+                          onTap: () => Navigator.of(context).pop(_MoveSceneResult(chapterId: chapter.id, cancelled: false)),
+                        )),
+                  ],
                 ),
               ),
-            ...chapters.map((chapter) => ListTile(
-                  leading: const Icon(Icons.menu_book_outlined, color: AppColors.gold),
-                  title: Text(chapter.title, style: const TextStyle(color: Colors.white)),
-                  trailing: chapter.id == currentChapterId ? const Icon(Icons.check, color: AppColors.gold) : null,
-                  onTap: () => Navigator.of(context).pop(_MoveSceneResult(chapterId: chapter.id, cancelled: false)),
-                )),
-          ],
+            ],
+          ),
         ),
       ),
     );
