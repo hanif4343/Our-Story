@@ -13,18 +13,14 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Some plugins (e.g. video_thumbnail) ship their own android/build.gradle
-// pinned to an old compileSdk, which fails AAR metadata checks against
-// newer androidx dependencies pulled in by other plugins. Force every
-// Android library sub-module (but not :app, which already sets its own
-// compileSdk directly and is evaluated early because of
-// evaluationDependsOn above) to compile against the same SDK as the app.
-// afterEvaluate (rather than plugins.withId) is used so this runs only
-// after each plugin's own build.gradle has fully finished executing —
-// applying it mid-script broke some plugins' later `kotlin { ... }` DSL
-// blocks (e.g. audioplayers_android).
+// video_thumbnail ships its own android/build.gradle pinned to an old
+// compileSdk (33), which fails AAR metadata checks against newer androidx
+// dependencies pulled in by other plugins (media3, androidx.core, etc.).
+// Override compileSdk for THIS plugin only — earlier attempts to force
+// this for every sub-module broke audioplayers_android's own build.gradle
+// (its `kotlin { ... }` block), which never needed the override at all.
 subprojects { subproject ->
-    if (subproject.path != ':app') {
+    if (subproject.name == 'video_thumbnail') {
         subproject.afterEvaluate {
             if (subproject.hasProperty('android')) {
                 subproject.android.compileSdk = 36
