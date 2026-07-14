@@ -45,6 +45,15 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
 
+# audioplayers_android 5.3.0 (pulled in by audioplayers's ^5.3.0 constraint)
+# fails to build under this project's Gradle/Kotlin toolchain — its
+# build.gradle throws "Could not find method kotlin()" while evaluating
+# the plugin. 5.3.0 isn't even listed as audioplayers_android's own
+# latest stable release on pub.dev (5.2.1 is), suggesting it's a broken
+# release. Pin back to the known-good 5.2.1 until upstream sorts it out.
+dependency_overrides:
+  audioplayers_android: 5.2.1
+
 flutter:
   uses-material-design: true
 
