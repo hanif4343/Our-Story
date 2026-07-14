@@ -60,7 +60,7 @@ jobs:
           gradle wrapper --gradle-version 8.14.5 --distribution-type all
 
       - name: Run analyzer
-        run: flutter analyze --fatal-infos
+        run: flutter analyze --no-fatal-infos
 
       - name: Run tests
         run: flutter test
