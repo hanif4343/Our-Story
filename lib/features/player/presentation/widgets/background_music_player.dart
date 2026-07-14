@@ -30,6 +30,10 @@ class _BackgroundMusicControllerState extends State<BackgroundMusicController> {
   final AudioPlayer _player = AudioPlayer();
   String? _currentPath;
   bool _isDisposed = false;
+  // audioplayers' AudioPlayer has no getter for the current volume — only
+  // setVolume(). We track the last value we set locally so _fadeTo can
+  // compute a smooth ramp from wherever the volume currently sits.
+  double _currentVolume = 0.0;
 
   @override
   void initState() {
@@ -62,6 +66,7 @@ class _BackgroundMusicControllerState extends State<BackgroundMusicController> {
     _currentPath = widget.musicPath;
     try {
       await _player.setVolume(0);
+      _currentVolume = 0.0;
       await _player.play(DeviceFileSource(widget.musicPath!));
       await _fadeTo(widget.volume);
     } catch (_) {
@@ -73,12 +78,13 @@ class _BackgroundMusicControllerState extends State<BackgroundMusicController> {
   Future<void> _fadeTo(double target) async {
     const steps = 12;
     final stepDuration = Duration(milliseconds: widget.fadeDuration.inMilliseconds ~/ steps);
-    final current = await _player.getVolume() ?? 0.0;
+    final current = _currentVolume;
     final delta = (target - current) / steps;
     for (var i = 0; i < steps; i++) {
       if (_isDisposed) return;
       await Future.delayed(stepDuration);
-      await _player.setVolume((current + delta * (i + 1)).clamp(0.0, 1.0));
+      _currentVolume = (current + delta * (i + 1)).clamp(0.0, 1.0);
+      await _player.setVolume(_currentVolume);
     }
   }
 
