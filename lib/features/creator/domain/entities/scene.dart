@@ -78,7 +78,7 @@ class Scene extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const Scene({
+  Scene({
     required this.id,
     required this.order,
     required this.title,
