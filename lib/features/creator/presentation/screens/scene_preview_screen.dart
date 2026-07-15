@@ -54,7 +54,11 @@ class ScenePreviewScreen extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: MediaAudioPlayer(audioPath: scene.musicPath ?? scene.voiceRecordingPath),
+                  child: MediaAudioPlayer(
+                    audioPath: scene.musicPath ?? scene.voiceRecordingPath,
+                    trimStart: scene.musicPath != null ? scene.musicTrimStart : (scene.voiceNote?.trimStart ?? Duration.zero),
+                    trimEnd: scene.musicPath != null ? scene.musicTrimEnd : scene.voiceNote?.trimEnd,
+                  ),
                 ),
               ),
             ),
