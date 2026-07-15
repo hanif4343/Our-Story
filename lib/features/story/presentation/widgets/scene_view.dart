@@ -151,29 +151,43 @@ class SceneView extends StatelessWidget {
     // as a fallback for scenes with no media attached at all. This way
     // adding a photo or video to a scene is enough for it to actually
     // play; there's no separate switch to remember to flip.
-    final Widget background;
     if (scene.videoPaths.isNotEmpty) {
-      background = MediaVideoPlayer(
+      // The video is never wrapped in the extra "blurred" treatment
+      // below — [MediaVideoPlayer] renders full-bleed on its own, and
+      // blurring it would just make the actual footage unwatchable.
+      return MediaVideoPlayer(
         videoPath: scene.videoPaths.first,
         autoPlay: true,
         loop: onVideoEnded == null,
         onEnded: onVideoEnded,
         isPaused: isPaused,
       );
-    } else if (scene.photoPaths.isNotEmpty) {
-      background = (scene.milestoneType == SceneMilestoneType.wedding && scene.photoPaths.length > 1)
+    }
+    if (scene.photoPaths.isNotEmpty) {
+      // [_CoverPhoto] and [_PhotoSlideshowBackground] already compose
+      // their own soft blurred backdrop behind a sharp foreground
+      // photo — wrapping that whole composition in another blur (as
+      // used to happen for Proposal-milestone scenes) blurred the
+      // sharp foreground too, leaving the entire frame looking out of
+      // focus. So photos, like video, skip the extra "blurred" pass
+      // and keep their own intentional look regardless of milestone.
+      return (scene.milestoneType == SceneMilestoneType.wedding && scene.photoPaths.length > 1)
           ? _PhotoSlideshowBackground(photoPaths: scene.photoPaths, fallbackGradient: _moodGradient)
           : _CoverPhoto(path: scene.photoPaths.first, fallbackGradient: _moodGradient);
-    } else {
-      background = switch (scene.backgroundType) {
-        BackgroundType.solidColor => Container(
-            color: scene.backgroundColorHex != null ? _parseHexColor(scene.backgroundColorHex!) : AppColors.midnightBlue,
-          ),
-        BackgroundType.photo || BackgroundType.video || BackgroundType.romanticGradient =>
-          Container(decoration: BoxDecoration(gradient: _moodGradient)),
-      };
     }
 
+    final background = switch (scene.backgroundType) {
+      BackgroundType.solidColor => Container(
+          color: scene.backgroundColorHex != null ? _parseHexColor(scene.backgroundColorHex!) : AppColors.midnightBlue,
+        ),
+      BackgroundType.photo || BackgroundType.video || BackgroundType.romanticGradient =>
+        Container(decoration: BoxDecoration(gradient: _moodGradient)),
+    };
+
+    // Only a plain gradient/solid fallback (no actual photo or video
+    // attached) ever gets the atmospheric blur — that's a flat colour
+    // with nothing sharp to lose, so blurring it just softens the
+    // Proposal milestone's mood behind the camera-zoom effect.
     if (!blurred) return background;
     return ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4), child: background);
   }
