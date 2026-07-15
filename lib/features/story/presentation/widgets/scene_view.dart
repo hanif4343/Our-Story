@@ -89,28 +89,54 @@ class SceneView extends StatelessWidget {
         isProposal
             ? _CameraZoomBackground(child: _buildBackground(blurred: true))
             : _buildBackground(blurred: false),
-        Container(color: Colors.black.withValues(alpha: 0.35)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(DateFormatter.scene(scene.date), style: AppTextStyles.sceneDate, textAlign: TextAlign.center),
-              const SizedBox(height: 14),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: scene.letter != null
-                      ? LetterView(
-                          key: ValueKey('letter-${scene.id}'),
-                          letter: scene.letter!,
-                          fallbackTitle: scene.title,
-                          fallbackSubtitle: scene.subtitle,
-                        )
-                      : _PlainSceneContent(scene: scene),
+        // Smart scrim: the top ~40% of the frame stays fully clear so
+        // the photo/video is actually visible, then eases into a dark
+        // gradient toward the bottom where the text lives — replacing
+        // the old flat tint that dimmed the whole image edge-to-edge
+        // regardless of where the text actually sat.
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, 0.4, 0.72, 1.0],
+              colors: [Colors.transparent, Colors.transparent, Colors.black54, Colors.black87],
+            ),
+          ),
+        ),
+        // Bottom-anchored, height-capped text panel (à la "Stories"
+        // captions) instead of a vertically centered block — so long
+        // letters/story text scroll within their own lane rather than
+        // stretching over and hiding most of the picture.
+        LayoutBuilder(
+          builder: (context, constraints) => Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 32, right: 32, top: 24, bottom: 108),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: constraints.maxHeight * 0.52),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(DateFormatter.scene(scene.date), style: AppTextStyles.sceneDate, textAlign: TextAlign.center),
+                    const SizedBox(height: 14),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: scene.letter != null
+                            ? LetterView(
+                                key: ValueKey('letter-${scene.id}'),
+                                letter: scene.letter!,
+                                fallbackTitle: scene.title,
+                                fallbackSubtitle: scene.subtitle,
+                              )
+                            : _PlainSceneContent(scene: scene),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
         AnimationOverlayFactory.resolve(scene.animationType),
