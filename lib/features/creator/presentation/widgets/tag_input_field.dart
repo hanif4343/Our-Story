@@ -42,7 +42,7 @@ class _TagInputFieldState extends State<TagInputField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Tags', style: AppTextStyles.label),
+        const Text('Tags', style: AppTextStyles.label),
         const SizedBox(height: 10),
         TextField(
           controller: _controller,
