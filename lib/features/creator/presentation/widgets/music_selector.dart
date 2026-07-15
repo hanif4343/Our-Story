@@ -53,7 +53,7 @@ class MusicSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Music', style: AppTextStyles.label),
+        const Text('Music', style: AppTextStyles.label),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
