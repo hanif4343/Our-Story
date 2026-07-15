@@ -339,9 +339,9 @@ class _StatsStage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Thank You', style: AppTextStyles.displayTitle, textAlign: TextAlign.center),
+        const Text('Thank You', style: AppTextStyles.displayTitle, textAlign: TextAlign.center),
         const SizedBox(height: 8),
-        Text('for reliving every moment with us', style: AppTextStyles.heroSubtitle, textAlign: TextAlign.center),
+        const Text('for reliving every moment with us', style: AppTextStyles.heroSubtitle, textAlign: TextAlign.center),
         const SizedBox(height: 28),
         Wrap(
           alignment: WrapAlignment.center,
@@ -399,11 +399,11 @@ class _AnniversaryStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.favorite, color: AppColors.rosePink, size: 44),
-        const SizedBox(height: 18),
+        Icon(Icons.favorite, color: AppColors.rosePink, size: 44),
+        SizedBox(height: 18),
         Text('Happy Anniversary ❤️', style: AppTextStyles.displayTitle, textAlign: TextAlign.center),
       ],
     );
@@ -423,18 +423,18 @@ class _CreditsStage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Created with Love', style: AppTextStyles.sceneTitle, textAlign: TextAlign.center),
+        const Text('Created with Love', style: AppTextStyles.sceneTitle, textAlign: TextAlign.center),
         const SizedBox(height: 22),
         if (partnerOne.isNotEmpty) Text(partnerOne, style: AppTextStyles.credits, textAlign: TextAlign.center),
         if (partnerTwo.isNotEmpty) ...[
           const SizedBox(height: 6),
-          Text('for', style: AppTextStyles.label),
+          const Text('for', style: AppTextStyles.label),
           const SizedBox(height: 6),
           Text(partnerTwo, style: AppTextStyles.credits, textAlign: TextAlign.center),
         ],
         if (featured.isNotEmpty) ...[
           const SizedBox(height: 22),
-          Text('Featuring', style: AppTextStyles.label),
+          const Text('Featuring', style: AppTextStyles.label),
           const SizedBox(height: 6),
           Text(featured, style: AppTextStyles.credits, textAlign: TextAlign.center),
         ],
