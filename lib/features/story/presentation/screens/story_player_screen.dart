@@ -70,6 +70,10 @@ class _StoryPlayerScreenState extends ConsumerState<StoryPlayerScreen> {
                     musicPath: state.currentScene!.musicPath ?? settings.defaultMusicPath,
                     enabled: settings.autoPlayMusicInStoryMode && state.status == StoryPlaybackStatus.playing,
                     volume: settings.backgroundMusicVolume,
+                    // The trim range only applies to a scene's own music —
+                    // the app-wide default fallback track always plays in full.
+                    trimStart: state.currentScene!.musicPath != null ? state.currentScene!.musicTrimStart : Duration.zero,
+                    trimEnd: state.currentScene!.musicPath != null ? state.currentScene!.musicTrimEnd : null,
                   ),
                   Positioned.fill(
                     child: GestureDetector(
