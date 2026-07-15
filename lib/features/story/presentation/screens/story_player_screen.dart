@@ -98,6 +98,7 @@ class _StoryPlayerScreenState extends ConsumerState<StoryPlayerScreen> {
                           key: ValueKey(state.currentScene!.id),
                           scene: state.currentScene!,
                           onVideoEnded: () => viewModel.onVideoFinished(state.currentScene!.id),
+                          isPaused: state.status == StoryPlaybackStatus.paused,
                         ),
                       ),
                     ),
