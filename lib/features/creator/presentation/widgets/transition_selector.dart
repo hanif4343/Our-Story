@@ -14,7 +14,7 @@ class TransitionSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Transition', style: AppTextStyles.label),
+        const Text('Transition', style: AppTextStyles.label),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
