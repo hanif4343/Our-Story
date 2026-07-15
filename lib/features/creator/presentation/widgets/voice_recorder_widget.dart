@@ -191,7 +191,7 @@ class _VoiceRecorderWidgetState extends ConsumerState<VoiceRecorderWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Voice Recording', style: AppTextStyles.label),
+        const Text('Voice Recording', style: AppTextStyles.label),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -222,7 +222,7 @@ class _VoiceRecorderWidgetState extends ConsumerState<VoiceRecorderWidget> {
           ),
         ),
         const SizedBox(width: 14),
-        Expanded(
+        const Expanded(
           child: Text('Tap to record a voice narration', style: AppTextStyles.bodyMedium),
         ),
       ],
