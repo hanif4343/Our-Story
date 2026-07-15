@@ -54,6 +54,14 @@ class Scene extends Equatable {
 
   final String? musicPath;
 
+  /// Non-destructive trim range for [musicPath] (v1.6.0 Audio Trim
+  /// Editor) — the source file is never modified, only playback (both
+  /// the Creator's preview and Story Mode's background music) is
+  /// clipped to `[musicTrimStart, musicTrimEnd]`. `musicTrimEnd` of
+  /// `null` means "play through to the track's natural end".
+  final Duration musicTrimStart;
+  final Duration? musicTrimEnd;
+
   final AnimationType animationType;
   final TransitionType transitionType;
   final BackgroundType backgroundType;
@@ -94,6 +102,8 @@ class Scene extends Equatable {
     this.voiceRecordingPath,
     this.voiceNote,
     this.musicPath,
+    this.musicTrimStart = Duration.zero,
+    this.musicTrimEnd,
     this.animationType = AnimationType.none,
     this.transitionType = TransitionType.fade,
     this.backgroundType = BackgroundType.romanticGradient,
@@ -122,6 +132,9 @@ class Scene extends Equatable {
     String? voiceRecordingPath,
     VoiceNote? voiceNote,
     String? musicPath,
+    Duration? musicTrimStart,
+    Duration? musicTrimEnd,
+    bool clearMusicTrimEnd = false,
     AnimationType? animationType,
     TransitionType? transitionType,
     BackgroundType? backgroundType,
@@ -149,6 +162,8 @@ class Scene extends Equatable {
       voiceRecordingPath: voiceRecordingPath ?? this.voiceRecordingPath,
       voiceNote: voiceNote ?? this.voiceNote,
       musicPath: musicPath ?? this.musicPath,
+      musicTrimStart: musicTrimStart ?? this.musicTrimStart,
+      musicTrimEnd: clearMusicTrimEnd ? null : (musicTrimEnd ?? this.musicTrimEnd),
       animationType: animationType ?? this.animationType,
       transitionType: transitionType ?? this.transitionType,
       backgroundType: backgroundType ?? this.backgroundType,
@@ -198,6 +213,8 @@ class Scene extends Equatable {
         voiceRecordingPath,
         voiceNote,
         musicPath,
+        musicTrimStart,
+        musicTrimEnd,
         animationType,
         transitionType,
         backgroundType,
