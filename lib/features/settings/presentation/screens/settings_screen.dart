@@ -60,7 +60,7 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('Journey', style: AppTextStyles.label),
+          const Text('Journey', style: AppTextStyles.label),
           const SizedBox(height: 8),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -76,18 +76,18 @@ class SettingsScreen extends ConsumerWidget {
             onTap: journey == null ? null : () => _openJourneyEditor(context, ref),
           ),
           const Divider(height: 40),
-          Text('Story Mode', style: AppTextStyles.label),
+          const Text('Story Mode', style: AppTextStyles.label),
           const SizedBox(height: 8),
           SwitchListTile(
             value: settings.autoPlayMusicInStoryMode,
             onChanged: viewModel.toggleAutoPlayMusic,
-            activeColor: AppColors.gold,
+            activeThumbColor: AppColors.gold,
             title: const Text('Auto-play music', style: TextStyle(color: Colors.white)),
             subtitle: const Text('Background music changes automatically between scenes.',
                 style: TextStyle(color: AppColors.mutedWhite, fontSize: 12)),
           ),
           const Divider(height: 40),
-          Text('Music', style: AppTextStyles.label),
+          const Text('Music', style: AppTextStyles.label),
           const SizedBox(height: 8),
           Text(
             'Set one global track to play whenever a scene has no music of its own.',
@@ -108,7 +108,7 @@ class SettingsScreen extends ConsumerWidget {
             onChanged: viewModel.setBackgroundMusicVolume,
           ),
           const Divider(height: 40),
-          Text('Creator Account', style: AppTextStyles.label),
+          const Text('Creator Account', style: AppTextStyles.label),
           const SizedBox(height: 8),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -119,12 +119,12 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => _openChangePasswordDialog(context),
           ),
           const Divider(height: 40),
-          Text('About', style: AppTextStyles.label),
+          const Text('About', style: AppTextStyles.label),
           const SizedBox(height: 8),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Version', style: TextStyle(color: Colors.white)),
-            trailing: Text(AppConfig.buildLabel, style: const TextStyle(color: AppColors.mutedWhite)),
+            trailing: const Text(AppConfig.buildLabel, style: TextStyle(color: AppColors.mutedWhite)),
           ),
           const ListTile(
             contentPadding: EdgeInsets.zero,
