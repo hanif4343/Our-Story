@@ -94,7 +94,11 @@ class _StoryPlayerScreenState extends ConsumerState<StoryPlayerScreen> {
                         switchOutCurve: Curves.linear,
                         transitionBuilder: (child, animation) =>
                             SceneTransitions.build(state.currentScene!.transitionType, child, animation),
-                        child: SceneView(key: ValueKey(state.currentScene!.id), scene: state.currentScene!),
+                        child: SceneView(
+                          key: ValueKey(state.currentScene!.id),
+                          scene: state.currentScene!,
+                          onVideoEnded: () => viewModel.onVideoFinished(state.currentScene!.id),
+                        ),
                       ),
                     ),
                   ),
