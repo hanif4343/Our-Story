@@ -144,7 +144,7 @@ class _JourneyIntroScreenState extends ConsumerState<JourneyIntroScreen> {
                         ? const SizedBox.shrink()
                         : Column(
                             children: [
-                              Text('Wedding Date', style: AppTextStyles.label, textAlign: TextAlign.center),
+                              const Text('Wedding Date', style: AppTextStyles.label, textAlign: TextAlign.center),
                               const SizedBox(height: 6),
                               Text(
                                 DateFormatter.scene(weddingDate),
