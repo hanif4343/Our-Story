@@ -89,6 +89,14 @@ class SceneModel extends HiveObject {
   @HiveField(24)
   SceneMilestoneType milestoneType;
 
+  /// Non-destructive trim range for [musicPath] (v1.6.0 Audio Trim
+  /// Editor). `musicTrimEndMs` of `null` means "no end trim".
+  @HiveField(25)
+  int musicTrimStartMs;
+
+  @HiveField(26)
+  int? musicTrimEndMs;
+
   SceneModel({
     required this.id,
     required this.order,
@@ -105,6 +113,8 @@ class SceneModel extends HiveObject {
     this.voiceRecordingPath,
     this.voiceNote,
     this.musicPath,
+    this.musicTrimStartMs = 0,
+    this.musicTrimEndMs,
     this.animationType = AnimationType.none,
     this.transitionType = TransitionType.fade,
     this.backgroundType = BackgroundType.romanticGradient,
@@ -134,6 +144,8 @@ class SceneModel extends HiveObject {
       voiceRecordingPath: scene.voiceRecordingPath,
       voiceNote: scene.voiceNote != null ? VoiceModel.fromEntity(scene.voiceNote!) : null,
       musicPath: scene.musicPath,
+      musicTrimStartMs: scene.musicTrimStart.inMilliseconds,
+      musicTrimEndMs: scene.musicTrimEnd?.inMilliseconds,
       animationType: scene.animationType,
       transitionType: scene.transitionType,
       backgroundType: scene.backgroundType,
@@ -164,6 +176,8 @@ class SceneModel extends HiveObject {
       voiceRecordingPath: voiceRecordingPath,
       voiceNote: voiceNote?.toEntity(),
       musicPath: musicPath,
+      musicTrimStart: Duration(milliseconds: musicTrimStartMs),
+      musicTrimEnd: musicTrimEndMs != null ? Duration(milliseconds: musicTrimEndMs!) : null,
       animationType: animationType,
       transitionType: transitionType,
       backgroundType: backgroundType,
@@ -222,13 +236,17 @@ class SceneModelAdapter extends TypeAdapter<SceneModel> {
       chapterId: fields[23] as String?,
       // Field 24 was added in v1.3.0.
       milestoneType: (fields[24] as SceneMilestoneType?) ?? SceneMilestoneType.none,
+      // Fields 25-26 were added in v1.6.0 (Audio Trim Editor) — missing
+      // on older records means "untrimmed", i.e. play the whole track.
+      musicTrimStartMs: (fields[25] as int?) ?? 0,
+      musicTrimEndMs: fields[26] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SceneModel obj) {
     writer
-      ..writeByte(25)
+      ..writeByte(27)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -278,6 +296,10 @@ class SceneModelAdapter extends TypeAdapter<SceneModel> {
       ..writeByte(23)
       ..write(obj.chapterId)
       ..writeByte(24)
-      ..write(obj.milestoneType);
+      ..write(obj.milestoneType)
+      ..writeByte(25)
+      ..write(obj.musicTrimStartMs)
+      ..writeByte(26)
+      ..write(obj.musicTrimEndMs);
   }
 }
