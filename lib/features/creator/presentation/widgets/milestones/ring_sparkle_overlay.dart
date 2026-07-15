@@ -60,7 +60,7 @@ class _RingSparkleOverlayState extends State<RingSparkleOverlay> with SingleTick
                   const Icon(Icons.circle_outlined, size: 64, color: AppColors.gold),
                   ...List.generate(6, (i) {
                     final angle = (_controller.value * 2 * pi) + (i * pi / 3);
-                    final radius = 60.0;
+                    const radius = 60.0;
                     return Transform.translate(
                       offset: Offset(cos(angle) * radius, sin(angle) * radius),
                       child: Icon(
