@@ -31,6 +31,8 @@ class SceneEditorState {
   final String? voiceRecordingPath;
   final VoiceNote? voiceNote;
   final String? musicPath;
+  final Duration musicTrimStart;
+  final Duration? musicTrimEnd;
   final AnimationType animationType;
   final TransitionType transitionType;
   final BackgroundType backgroundType;
@@ -58,6 +60,8 @@ class SceneEditorState {
     this.voiceRecordingPath,
     this.voiceNote,
     this.musicPath,
+    this.musicTrimStart = Duration.zero,
+    this.musicTrimEnd,
     this.animationType = AnimationType.none,
     this.transitionType = TransitionType.fade,
     this.backgroundType = BackgroundType.romanticGradient,
@@ -88,6 +92,8 @@ class SceneEditorState {
         voiceRecordingPath: scene.voiceRecordingPath,
         voiceNote: scene.voiceNote,
         musicPath: scene.musicPath,
+        musicTrimStart: scene.musicTrimStart,
+        musicTrimEnd: scene.musicTrimEnd,
         animationType: scene.animationType,
         transitionType: scene.transitionType,
         backgroundType: scene.backgroundType,
@@ -119,6 +125,9 @@ class SceneEditorState {
     bool clearVoiceNote = false,
     String? musicPath,
     bool clearMusicPath = false,
+    Duration? musicTrimStart,
+    Duration? musicTrimEnd,
+    bool clearMusicTrimEnd = false,
     AnimationType? animationType,
     TransitionType? transitionType,
     BackgroundType? backgroundType,
@@ -146,6 +155,8 @@ class SceneEditorState {
       voiceRecordingPath: clearVoiceRecordingPath ? null : (voiceRecordingPath ?? this.voiceRecordingPath),
       voiceNote: clearVoiceNote ? null : (voiceNote ?? this.voiceNote),
       musicPath: clearMusicPath ? null : (musicPath ?? this.musicPath),
+      musicTrimStart: clearMusicPath ? Duration.zero : (musicTrimStart ?? this.musicTrimStart),
+      musicTrimEnd: (clearMusicPath || clearMusicTrimEnd) ? null : (musicTrimEnd ?? this.musicTrimEnd),
       animationType: animationType ?? this.animationType,
       transitionType: transitionType ?? this.transitionType,
       backgroundType: backgroundType ?? this.backgroundType,
@@ -241,7 +252,17 @@ class SceneEditorViewModel extends StateNotifier<SceneEditorState> {
   }
 
   void setMusicPath(String? value) {
-    state = value == null ? state.copyWith(clearMusicPath: true) : state.copyWith(musicPath: value);
+    // A newly picked track starts untrimmed — a trim range authored for
+    // the previous track wouldn't make sense applied to a different file.
+    state = value == null ? state.copyWith(clearMusicPath: true) : state.copyWith(musicPath: value, musicTrimStart: Duration.zero, clearMusicTrimEnd: true);
+    _scheduleAutoSave();
+  }
+
+  /// Sets the non-destructive trim range for the current [musicPath]
+  /// (v1.6.0 Audio Trim Editor). Pass `end: null` to clear the end trim
+  /// (play through to the track's natural end).
+  void setMusicTrim({required Duration start, required Duration? end}) {
+    state = state.copyWith(musicTrimStart: start, musicTrimEnd: end, clearMusicTrimEnd: end == null);
     _scheduleAutoSave();
   }
 
@@ -262,14 +283,35 @@ class SceneEditorViewModel extends StateNotifier<SceneEditorState> {
   }
 
   void addPhotoPath(String path) {
-    state = state.copyWith(photoPaths: [...state.photoPaths, path]);
+    state = state.copyWith(
+      photoPaths: [...state.photoPaths, path],
+      backgroundType: _backgroundTypeAfterAddingPhoto(),
+    );
     _scheduleAutoSave();
   }
 
   void addPhotoPaths(List<String> paths) {
     if (paths.isEmpty) return;
-    state = state.copyWith(photoPaths: [...state.photoPaths, ...paths]);
+    state = state.copyWith(
+      photoPaths: [...state.photoPaths, ...paths],
+      backgroundType: _backgroundTypeAfterAddingPhoto(),
+    );
     _scheduleAutoSave();
+  }
+
+  /// A scene starts with [BackgroundType.romanticGradient] by default. If
+  /// the Creator hasn't deliberately picked a background yet (still on
+  /// that untouched default) and this is the first photo being attached,
+  /// switch the background to Photo automatically — otherwise the photo
+  /// gets added but Preview keeps showing the gradient, since nothing
+  /// tells [SceneView] to render it. A background the Creator already set
+  /// on purpose (including picking Photo/Video explicitly before) is
+  /// never overridden here.
+  BackgroundType _backgroundTypeAfterAddingPhoto() {
+    if (state.backgroundType == BackgroundType.romanticGradient && state.photoPaths.isEmpty) {
+      return BackgroundType.photo;
+    }
+    return state.backgroundType;
   }
 
   void removePhotoPath(String path) {
@@ -290,7 +332,9 @@ class SceneEditorViewModel extends StateNotifier<SceneEditorState> {
   }
 
   void addVideoPath(String path) {
-    state = state.copyWith(videoPaths: [...state.videoPaths, path]);
+    final backgroundType =
+        state.backgroundType == BackgroundType.romanticGradient && state.videoPaths.isEmpty ? BackgroundType.video : state.backgroundType;
+    state = state.copyWith(videoPaths: [...state.videoPaths, path], backgroundType: backgroundType);
     _scheduleAutoSave();
   }
 
@@ -383,6 +427,8 @@ class SceneEditorViewModel extends StateNotifier<SceneEditorState> {
       voiceRecordingPath: state.voiceRecordingPath,
       voiceNote: state.voiceNote,
       musicPath: state.musicPath,
+      musicTrimStart: state.musicTrimStart,
+      musicTrimEnd: state.musicTrimEnd,
       animationType: state.animationType,
       transitionType: state.transitionType,
       backgroundType: state.backgroundType,
