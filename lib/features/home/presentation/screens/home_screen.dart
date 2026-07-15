@@ -293,7 +293,7 @@ class _AnniversaryCountdownCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Anniversary Countdown', style: AppTextStyles.sectionLabel),
+                  const Text('Anniversary Countdown', style: AppTextStyles.sectionLabel),
                   const SizedBox(height: 4),
                   Text(
                     daysUntil == 0 ? "It's today! ❤" : '$daysUntil days until ${DateFormatter.monthYear(anchorDate)}',
