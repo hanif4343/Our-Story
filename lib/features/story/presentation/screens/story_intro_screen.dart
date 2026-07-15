@@ -28,10 +28,10 @@ class StoryIntroScreen extends StatelessWidget {
                   duration: const Duration(milliseconds: 1200),
                   curve: Curves.easeOut,
                   builder: (context, value, child) => Opacity(opacity: value, child: child),
-                  child: Text(AppConstants.appName, style: AppTextStyles.heroTitle, textAlign: TextAlign.center),
+                  child: const Text(AppConstants.appName, style: AppTextStyles.heroTitle, textAlign: TextAlign.center),
                 ),
                 const SizedBox(height: 14),
-                Text(AppConstants.appTagline, style: AppTextStyles.sceneDate, textAlign: TextAlign.center),
+                const Text(AppConstants.appTagline, style: AppTextStyles.sceneDate, textAlign: TextAlign.center),
                 const Spacer(flex: 3),
                 AppButton(
                   label: 'Play',
