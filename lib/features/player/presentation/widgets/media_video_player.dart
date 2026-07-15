@@ -19,12 +19,23 @@ class MediaVideoPlayer extends StatefulWidget {
   final bool loop;
   final VoidCallback? onEnded;
 
+  /// When non-null, playback is driven externally instead of this
+  /// widget's own built-in tap-to-toggle gesture — set it to
+  /// `true`/`false` to pause/resume the video in lockstep with that
+  /// external state. Story Mode uses this so tapping anywhere on
+  /// screen to pause the story also actually pauses the video playing
+  /// underneath it, instead of leaving it silently running. Leave
+  /// `null` (the default) to keep the original self-contained
+  /// behaviour, where tapping the video itself toggles play/pause.
+  final bool? isPaused;
+
   const MediaVideoPlayer({
     super.key,
     required this.videoPath,
     this.autoPlay = false,
     this.loop = true,
     this.onEnded,
+    this.isPaused,
   });
 
   @override
@@ -53,7 +64,7 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
       await controller.setLooping(_playsOnce ? false : widget.loop);
       controller.addListener(_handleControllerUpdate);
       _controller = controller;
-      if (widget.autoPlay) await _controller.play();
+      if (widget.autoPlay && widget.isPaused != true) await _controller.play();
       if (mounted) setState(() => _initialized = true);
     } catch (_) {
       if (mounted) setState(() => _hasError = true);
@@ -90,6 +101,18 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
       _initialized = false;
       _endedFired = false;
       _initialize();
+      return;
+    }
+
+    // Keep the video in lockstep with an externally driven pause state
+    // (e.g. Story Mode's screen-level tap-to-pause) — so pausing the
+    // story also actually pauses the video playing underneath it.
+    if (_initialized && widget.isPaused != null && widget.isPaused != oldWidget.isPaused) {
+      if (widget.isPaused == true) {
+        _controller.pause();
+      } else if (!_playsOnce || !_endedFired) {
+        _controller.play();
+      }
     }
   }
 
@@ -125,11 +148,17 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
     }
 
     final size = _controller.value.size;
-    final videoWidth = size.width == 0 ? 16 : size.width;
-    final videoHeight = size.height == 0 ? 9 : size.height;
+    final videoWidth = size.width == 0 ? 16.0 : size.width;
+    final videoHeight = size.height == 0 ? 9.0 : size.height;
 
     return GestureDetector(
-      onTap: () => _controller.value.isPlaying ? _controller.pause() : _controller.play(),
+      // When playback is externally driven (Story Mode), the
+      // screen-level tap-to-pause already owns the tap gesture and
+      // this widget just follows `isPaused` — so it steps aside here
+      // instead of also toggling on its own and fighting that state.
+      onTap: widget.isPaused != null
+          ? null
+          : () => _controller.value.isPlaying ? _controller.pause() : _controller.play(),
       child: Stack(
         alignment: Alignment.center,
         fit: StackFit.expand,
