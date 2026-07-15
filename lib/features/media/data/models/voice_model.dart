@@ -22,12 +22,22 @@ class VoiceModel {
   @HiveField(4)
   String label;
 
+  /// Non-destructive trim range (v1.6.0 Audio Trim Editor). `trimEndMs`
+  /// of `null` means "no end trim — play to the natural end".
+  @HiveField(5)
+  int trimStartMs;
+
+  @HiveField(6)
+  int? trimEndMs;
+
   VoiceModel({
     required this.path,
     required this.durationMs,
     this.waveform = const [],
     required this.recordedAt,
     this.label = '',
+    this.trimStartMs = 0,
+    this.trimEndMs,
   });
 
   factory VoiceModel.fromEntity(VoiceNote note) => VoiceModel(
@@ -36,6 +46,8 @@ class VoiceModel {
         waveform: note.waveform,
         recordedAt: note.recordedAt,
         label: note.label,
+        trimStartMs: note.trimStart.inMilliseconds,
+        trimEndMs: note.trimEnd?.inMilliseconds,
       );
 
   VoiceNote toEntity() => VoiceNote(
@@ -44,6 +56,8 @@ class VoiceModel {
         waveform: waveform,
         recordedAt: recordedAt,
         label: label,
+        trimStart: Duration(milliseconds: trimStartMs),
+        trimEnd: trimEndMs != null ? Duration(milliseconds: trimEndMs!) : null,
       );
 }
 
@@ -65,13 +79,17 @@ class VoiceModelAdapter extends TypeAdapter<VoiceModel> {
       // Field 4 was added in v1.4.0 — missing on older records (falls
       // back to an empty/unnamed label, no migration step needed).
       label: (fields[4] as String?) ?? '',
+      // Fields 5-6 were added in v1.6.0 (Audio Trim Editor) — missing on
+      // older records means "untrimmed", i.e. play the whole recording.
+      trimStartMs: (fields[5] as int?) ?? 0,
+      trimEndMs: fields[6] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, VoiceModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.path)
       ..writeByte(1)
@@ -81,6 +99,10 @@ class VoiceModelAdapter extends TypeAdapter<VoiceModel> {
       ..writeByte(3)
       ..write(obj.recordedAt)
       ..writeByte(4)
-      ..write(obj.label);
+      ..write(obj.label)
+      ..writeByte(5)
+      ..write(obj.trimStartMs)
+      ..writeByte(6)
+      ..write(obj.trimEndMs);
   }
 }
