@@ -24,7 +24,16 @@ import 'letter_view.dart';
 class SceneView extends StatelessWidget {
   final Scene scene;
 
-  const SceneView({super.key, required this.scene});
+  /// Called once when this scene's background video finishes playing a
+  /// single full playthrough. Only relevant when the scene actually has
+  /// a video background — ignored otherwise. Story Mode uses this to
+  /// advance to the next scene once the video's own length is done,
+  /// instead of a fixed timer (see [StoryViewModel.onVideoFinished]).
+  /// Leave null (e.g. the Creator's static Preview screen) to have the
+  /// video loop continuously instead.
+  final VoidCallback? onVideoEnded;
+
+  const SceneView({super.key, required this.scene, this.onVideoEnded});
 
   Color _parseHexColor(String hex) {
     final buffer = StringBuffer();
@@ -102,31 +111,78 @@ class SceneView extends StatelessWidget {
   }
 
   Widget _buildBackground({required bool blurred}) {
-    final background = switch (scene.backgroundType) {
-      BackgroundType.solidColor => Container(
-          color: scene.backgroundColorHex != null ? _parseHexColor(scene.backgroundColorHex!) : AppColors.midnightBlue,
-        ),
-      BackgroundType.photo => scene.photoPaths.isEmpty
-          ? Container(decoration: BoxDecoration(gradient: _moodGradient))
-          : (scene.milestoneType == SceneMilestoneType.wedding && scene.photoPaths.length > 1)
-              ? _PhotoSlideshowBackground(photoPaths: scene.photoPaths, fallbackGradient: _moodGradient)
-              : Image.file(
-                  File(scene.photoPaths.first),
-                  fit: BoxFit.cover,
-                  // v1.4.0 perf pass: cap decode resolution — scene
-                  // backgrounds render full-bleed but rarely need to
-                  // decode at the source photo's full camera resolution.
-                  cacheWidth: 1080,
-                  errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: _moodGradient)),
-                ),
-      BackgroundType.video => scene.videoPaths.isEmpty
-          ? Container(decoration: BoxDecoration(gradient: _moodGradient))
-          : MediaVideoPlayer(videoPath: scene.videoPaths.first, autoPlay: true, loop: true),
-      BackgroundType.romanticGradient => Container(decoration: BoxDecoration(gradient: _moodGradient)),
-    };
+    // A scene's attached photo(s)/video always take priority over the
+    // manually chosen background type below — that setting only matters
+    // as a fallback for scenes with no media attached at all. This way
+    // adding a photo or video to a scene is enough for it to actually
+    // play; there's no separate switch to remember to flip.
+    final Widget background;
+    if (scene.videoPaths.isNotEmpty) {
+      background = MediaVideoPlayer(
+        videoPath: scene.videoPaths.first,
+        autoPlay: true,
+        loop: onVideoEnded == null,
+        onEnded: onVideoEnded,
+      );
+    } else if (scene.photoPaths.isNotEmpty) {
+      background = (scene.milestoneType == SceneMilestoneType.wedding && scene.photoPaths.length > 1)
+          ? _PhotoSlideshowBackground(photoPaths: scene.photoPaths, fallbackGradient: _moodGradient)
+          : _CoverPhoto(path: scene.photoPaths.first, fallbackGradient: _moodGradient);
+    } else {
+      background = switch (scene.backgroundType) {
+        BackgroundType.solidColor => Container(
+            color: scene.backgroundColorHex != null ? _parseHexColor(scene.backgroundColorHex!) : AppColors.midnightBlue,
+          ),
+        BackgroundType.photo || BackgroundType.video || BackgroundType.romanticGradient =>
+          Container(decoration: BoxDecoration(gradient: _moodGradient)),
+      };
+    }
 
     if (!blurred) return background;
     return ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4), child: background);
+  }
+}
+
+/// Renders a scene photo so the whole image always stays visible,
+/// regardless of its aspect ratio relative to the screen. A landscape
+/// photo on a tall phone screen used to be forced to fill the frame
+/// with a hard `BoxFit.cover`, which zoomed in and cropped away most of
+/// the image. Instead this shows the full photo (`BoxFit.contain`) over
+/// a softly blurred, zoomed-in copy of the same photo as a backdrop —
+/// so there's never an empty bar and the subject is never cropped off.
+class _CoverPhoto extends StatelessWidget {
+  final String path;
+  final Gradient fallbackGradient;
+  const _CoverPhoto({super.key, required this.path, required this.fallbackGradient});
+
+  @override
+  Widget build(BuildContext context) {
+    final file = File(path);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Image.file(
+            file,
+            fit: BoxFit.cover,
+            // Small decode target — this copy is just a blurred
+            // backdrop, it never needs to be sharp.
+            cacheWidth: 400,
+            errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: fallbackGradient)),
+          ),
+        ),
+        Image.file(
+          file,
+          fit: BoxFit.contain,
+          // v1.4.0 perf pass: cap decode resolution — scene
+          // backgrounds render full-bleed but rarely need to decode at
+          // the source photo's full camera resolution.
+          cacheWidth: 1080,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        ),
+      ],
+    );
   }
 }
 
@@ -203,12 +259,10 @@ class _PhotoSlideshowBackgroundState extends State<_PhotoSlideshowBackground> {
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 900),
-      child: Image.file(
-        File(widget.photoPaths[_index]),
+      child: _CoverPhoto(
         key: ValueKey(widget.photoPaths[_index]),
-        fit: BoxFit.cover,
-        cacheWidth: 1080,
-        errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: widget.fallbackGradient)),
+        path: widget.photoPaths[_index],
+        fallbackGradient: widget.fallbackGradient,
       ),
     );
   }
