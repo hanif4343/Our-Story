@@ -3,19 +3,28 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Plays a local video file (a scene's `videoPaths` entry) with a
-/// minimal, chrome-free control surface — tap to toggle play/pause.
-/// Used by both the Scene Editor's media preview and Story Mode.
+/// Plays a local video file (a scene's `videoPaths` entry) full-bleed,
+/// covering its bounds exactly like a photo background would (no
+/// letterboxing), with a minimal, chrome-free control surface — tap to
+/// toggle play/pause. Used by both the Scene Editor's media preview and
+/// Story Mode.
+///
+/// When [onEnded] is provided, [loop] is ignored: the video plays once,
+/// start to finish, and [onEnded] fires exactly once when it completes —
+/// this is how Story Mode lets a video scene run for its own full
+/// length instead of a fixed timer.
 class MediaVideoPlayer extends StatefulWidget {
   final String videoPath;
   final bool autoPlay;
   final bool loop;
+  final VoidCallback? onEnded;
 
   const MediaVideoPlayer({
     super.key,
     required this.videoPath,
     this.autoPlay = false,
     this.loop = true,
+    this.onEnded,
   });
 
   @override
@@ -26,6 +35,10 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
   late VideoPlayerController _controller;
   bool _initialized = false;
   bool _hasError = false;
+  bool _isPlaying = false;
+  bool _endedFired = false;
+
+  bool get _playsOnce => widget.onEnded != null;
 
   @override
   void initState() {
@@ -35,9 +48,11 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
 
   Future<void> _initialize() async {
     try {
-      _controller = VideoPlayerController.file(File(widget.videoPath));
-      await _controller.initialize();
-      await _controller.setLooping(widget.loop);
+      final controller = VideoPlayerController.file(File(widget.videoPath));
+      await controller.initialize();
+      await controller.setLooping(_playsOnce ? false : widget.loop);
+      controller.addListener(_handleControllerUpdate);
+      _controller = controller;
       if (widget.autoPlay) await _controller.play();
       if (mounted) setState(() => _initialized = true);
     } catch (_) {
@@ -45,19 +60,45 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
     }
   }
 
+  void _handleControllerUpdate() {
+    if (!mounted) return;
+    final value = _controller.value;
+
+    if (value.isPlaying != _isPlaying) {
+      setState(() => _isPlaying = value.isPlaying);
+    }
+
+    // Fire the completion callback once, right as a non-looping video
+    // finishes its one and only playthrough.
+    if (widget.onEnded != null &&
+        !_endedFired &&
+        value.isInitialized &&
+        !value.isPlaying &&
+        value.duration > Duration.zero &&
+        value.position >= value.duration) {
+      _endedFired = true;
+      widget.onEnded!();
+    }
+  }
+
   @override
   void didUpdateWidget(covariant MediaVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoPath != widget.videoPath) {
+      _controller.removeListener(_handleControllerUpdate);
       _controller.dispose();
       _initialized = false;
+      _endedFired = false;
       _initialize();
     }
   }
 
   @override
   void dispose() {
-    if (_initialized) _controller.dispose();
+    if (_initialized) {
+      _controller.removeListener(_handleControllerUpdate);
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -83,16 +124,30 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
       );
     }
 
+    final size = _controller.value.size;
+    final videoWidth = size.width == 0 ? 16 : size.width;
+    final videoHeight = size.height == 0 ? 9 : size.height;
+
     return GestureDetector(
-      onTap: () => setState(() => _controller.value.isPlaying ? _controller.pause() : _controller.play()),
+      onTap: () => _controller.value.isPlaying ? _controller.pause() : _controller.play(),
       child: Stack(
         alignment: Alignment.center,
+        fit: StackFit.expand,
         children: [
-          AspectRatio(
-            aspectRatio: _controller.value.aspectRatio == 0 ? 16 / 9 : _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
+          // Cover-fill, matching how a photo background renders — the
+          // video always fills the frame with no black letterbox bars,
+          // cropping evenly instead of shrinking to fit.
+          ClipRect(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: videoWidth,
+                height: videoHeight,
+                child: VideoPlayer(_controller),
+              ),
+            ),
           ),
-          if (!_controller.value.isPlaying)
+          if (!_isPlaying)
             Container(
               decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
               padding: const EdgeInsets.all(10),
