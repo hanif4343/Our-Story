@@ -70,7 +70,7 @@ class _YearChapterFieldsState extends State<YearChapterFields> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Year', style: AppTextStyles.label),
+              const Text('Year', style: AppTextStyles.label),
               const SizedBox(height: 10),
               TextField(
                 controller: _yearController,
@@ -91,7 +91,7 @@ class _YearChapterFieldsState extends State<YearChapterFields> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Chapter', style: AppTextStyles.label),
+              const Text('Chapter', style: AppTextStyles.label),
               const SizedBox(height: 10),
               TextField(
                 controller: _chapterController,
