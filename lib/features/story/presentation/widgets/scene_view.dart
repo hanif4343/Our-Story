@@ -33,7 +33,16 @@ class SceneView extends StatelessWidget {
   /// video loop continuously instead.
   final VoidCallback? onVideoEnded;
 
-  const SceneView({super.key, required this.scene, this.onVideoEnded});
+  /// Forwarded straight through to [MediaVideoPlayer] so an external
+  /// tap-to-pause (Story Mode's screen-level gesture) actually pauses
+  /// a scene's background video too, instead of just pausing the
+  /// music/progress bar while the video keeps playing underneath.
+  /// Leave `null` (the default) for contexts like the Creator's
+  /// Preview screen, where the video should keep its own built-in
+  /// tap-to-toggle behaviour.
+  final bool? isPaused;
+
+  const SceneView({super.key, required this.scene, this.onVideoEnded, this.isPaused});
 
   Color _parseHexColor(String hex) {
     final buffer = StringBuffer();
@@ -123,6 +132,7 @@ class SceneView extends StatelessWidget {
         autoPlay: true,
         loop: onVideoEnded == null,
         onEnded: onVideoEnded,
+        isPaused: isPaused,
       );
     } else if (scene.photoPaths.isNotEmpty) {
       background = (scene.milestoneType == SceneMilestoneType.wedding && scene.photoPaths.length > 1)
