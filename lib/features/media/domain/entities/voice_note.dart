@@ -23,13 +23,31 @@ class VoiceNote extends Equatable {
   /// Empty means unnamed — playback UI falls back to a generic label.
   final String label;
 
+  /// Non-destructive trim range (v1.6.0 Audio Trim Editor). The original
+  /// recording on disk is never modified — only playback is clipped to
+  /// `[trimStart, trimEnd]`. [trimStart] defaults to the very start;
+  /// [trimEnd] of `null` means "play through to the natural end", so an
+  /// untrimmed recording behaves exactly as it always has.
+  final Duration trimStart;
+  final Duration? trimEnd;
+
   const VoiceNote({
     required this.path,
     required this.duration,
     this.waveform = const [],
     required this.recordedAt,
     this.label = '',
+    this.trimStart = Duration.zero,
+    this.trimEnd,
   });
+
+  /// The effective end of playback: the explicit trim point if set,
+  /// otherwise the recording's full duration.
+  Duration get effectiveTrimEnd => trimEnd ?? duration;
+
+  /// Whether this recording has been trimmed to something shorter than
+  /// its full original length.
+  bool get isTrimmed => trimStart > Duration.zero || (trimEnd != null && trimEnd! < duration);
 
   VoiceNote copyWith({
     String? path,
@@ -37,6 +55,9 @@ class VoiceNote extends Equatable {
     List<double>? waveform,
     DateTime? recordedAt,
     String? label,
+    Duration? trimStart,
+    Duration? trimEnd,
+    bool clearTrimEnd = false,
   }) {
     return VoiceNote(
       path: path ?? this.path,
@@ -44,9 +65,11 @@ class VoiceNote extends Equatable {
       waveform: waveform ?? this.waveform,
       recordedAt: recordedAt ?? this.recordedAt,
       label: label ?? this.label,
+      trimStart: trimStart ?? this.trimStart,
+      trimEnd: clearTrimEnd ? null : (trimEnd ?? this.trimEnd),
     );
   }
 
   @override
-  List<Object?> get props => [path, duration, waveform, recordedAt, label];
+  List<Object?> get props => [path, duration, waveform, recordedAt, label, trimStart, trimEnd];
 }
