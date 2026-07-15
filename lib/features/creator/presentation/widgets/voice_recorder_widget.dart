@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../media/domain/entities/voice_note.dart';
 import '../../../media/presentation/providers/media_providers.dart';
 import '../../../media/presentation/widgets/waveform_widget.dart';
+import 'audio_trim_editor.dart';
 
 /// Record / stop / preview / delete a single voice-narration clip for a
 /// scene, with a real waveform (captured live from microphone amplitude,
@@ -51,7 +52,13 @@ class _VoiceRecorderWidgetState extends ConsumerState<VoiceRecorderWidget> {
   void initState() {
     super.initState();
     _playbackPlayer.onPositionChanged.listen((p) {
-      if (mounted) setState(() => _playbackPosition = p);
+      if (!mounted) return;
+      setState(() => _playbackPosition = p);
+      final trimEnd = widget.voiceNote?.trimEnd;
+      if (_isPlayingBack && trimEnd != null && p >= trimEnd) {
+        _playbackPlayer.pause();
+        setState(() => _isPlayingBack = false);
+      }
     });
     _playbackPlayer.onDurationChanged.listen((d) {
       if (mounted) setState(() => _playbackDuration = d);
@@ -104,9 +111,31 @@ class _VoiceRecorderWidgetState extends ConsumerState<VoiceRecorderWidget> {
       await _playbackPlayer.pause();
       setState(() => _isPlayingBack = false);
     } else {
-      await _playbackPlayer.play(DeviceFileSource(path));
+      final trimStart = widget.voiceNote?.trimStart ?? Duration.zero;
+      await _playbackPlayer.play(DeviceFileSource(path), position: trimStart);
       setState(() => _isPlayingBack = true);
     }
+  }
+
+  /// Opens the shared [AudioTrimEditor] (v1.6.0) for the current
+  /// recording — entirely non-destructive: only the trim range stored on
+  /// [VoiceNote] changes, the recorded file on disk is untouched.
+  Future<void> _trim(String path, VoiceNote? voiceNote) async {
+    await _playbackPlayer.stop();
+    setState(() => _isPlayingBack = false);
+    if (!mounted) return;
+    final result = await AudioTrimEditor.show(
+      context,
+      path: path,
+      initialTrimStart: voiceNote?.trimStart ?? Duration.zero,
+      initialTrimEnd: voiceNote?.trimEnd,
+      waveform: voiceNote?.waveform ?? const [],
+      title: 'Trim Voice Recording',
+    );
+    if (result == null || !mounted) return;
+    final (start, end) = result;
+    final base = voiceNote ?? VoiceNote(path: path, duration: _playbackDuration, recordedAt: DateTime.now());
+    widget.onVoiceNoteChanged?.call(base.copyWith(trimStart: start, trimEnd: end, clearTrimEnd: end == null));
   }
 
   void _delete() {
@@ -229,6 +258,7 @@ class _VoiceRecorderWidgetState extends ConsumerState<VoiceRecorderWidget> {
         : _playbackPosition.inMilliseconds / _playbackDuration.inMilliseconds;
     final label = voiceNote?.label.trim();
     final hasLabel = label != null && label.isNotEmpty;
+    final isTrimmed = voiceNote?.isTrimmed ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,6 +267,14 @@ class _VoiceRecorderWidgetState extends ConsumerState<VoiceRecorderWidget> {
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(label, style: AppTextStyles.bodyMedium.copyWith(color: Colors.white, fontSize: 13)),
+          ),
+        if (isTrimmed)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              'ট্রিম করা: ${_format(voiceNote!.trimStart)} – ${_format(voiceNote.effectiveTrimEnd)}',
+              style: const TextStyle(color: AppColors.gold, fontSize: 11),
+            ),
           ),
         Row(
           children: [
@@ -254,6 +292,11 @@ class _VoiceRecorderWidgetState extends ConsumerState<VoiceRecorderWidget> {
                   : Text(hasLabel ? '' : 'Voice narration', style: AppTextStyles.bodyMedium),
             ),
             IconButton(
+              icon: const Icon(Icons.content_cut, color: AppColors.mutedWhite, size: 20),
+              tooltip: 'Trim / Split',
+              onPressed: () => _trim(path, voiceNote),
+            ),
+            IconButton(
               icon: const Icon(Icons.edit_outlined, color: AppColors.mutedWhite, size: 20),
               tooltip: 'Rename',
               onPressed: () => _rename(path, voiceNote),
@@ -266,5 +309,11 @@ class _VoiceRecorderWidgetState extends ConsumerState<VoiceRecorderWidget> {
         ),
       ],
     );
+  }
+
+  String _format(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 }
