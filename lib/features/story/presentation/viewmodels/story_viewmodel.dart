@@ -107,7 +107,22 @@ class StoryViewModel extends StateNotifier<StoryState> {
     _autoAdvanceTimer?.cancel();
     final scene = state.currentScene;
     if (scene == null) return;
+    // A scene with an attached video plays out that video's own full
+    // length — advancement is driven by [onVideoFinished] once it
+    // actually finishes playing, not a fixed timer. Only photo/text
+    // scenes use the Creator's chosen `displayDuration`.
+    if (scene.videoPaths.isNotEmpty) return;
     _autoAdvanceTimer = Timer(scene.displayDuration, _advance);
+  }
+
+  /// Called by the Story Player when the current scene's background
+  /// video finishes a full playthrough. Guarded against stale callbacks
+  /// (e.g. the Creator already skipped ahead, or paused) by checking
+  /// both the scene id and playback status still match.
+  void onVideoFinished(String sceneId) {
+    if (state.currentScene?.id != sceneId) return;
+    if (state.status != StoryPlaybackStatus.playing) return;
+    _advance();
   }
 
   void _advance() {
