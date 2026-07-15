@@ -18,7 +18,7 @@ class MilestoneSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Milestone', style: AppTextStyles.label),
+        const Text('Milestone', style: AppTextStyles.label),
         const SizedBox(height: 6),
         Text(
           'Applies a themed cinematic treatment on top of this scene\'s existing content.',
