@@ -46,8 +46,11 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
   late VideoPlayerController _controller;
   bool _initialized = false;
   bool _hasError = false;
+  String? _errorDescription;
   bool _isPlaying = false;
+  bool _isBuffering = false;
   bool _endedFired = false;
+  bool _retriedAutoPlay = false;
 
   bool get _playsOnce => widget.onEnded != null;
 
@@ -66,8 +69,28 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
       _controller = controller;
       if (widget.autoPlay && widget.isPaused != true) await _controller.play();
       if (mounted) setState(() => _initialized = true);
-    } catch (_) {
-      if (mounted) setState(() => _hasError = true);
+
+      // Self-heal: on a slow/cloud-backed file (still downloading, not
+      // fully local yet) the controller can report "initialized" while
+      // the very first play() call silently doesn't take. Give it one
+      // retry a couple seconds in rather than leaving the video stuck
+      // showing a paused/play icon forever with no way to recover.
+      if (widget.autoPlay && widget.isPaused != true) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted || _retriedAutoPlay) return;
+          if (!_controller.value.isPlaying && !_endedFired && widget.isPaused != true) {
+            _retriedAutoPlay = true;
+            _controller.play();
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorDescription = e.toString();
+        });
+      }
     }
   }
 
@@ -75,8 +98,25 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
     if (!mounted) return;
     final value = _controller.value;
 
+    // Initialize() reading the file's metadata/first frame can succeed
+    // while the actual decode pipeline then fails a moment later (bad
+    // codec, corrupt/truncated file, unsupported format on this
+    // device) — previously that left the video silently frozen on its
+    // first frame forever, showing a plain paused/play icon with no
+    // indication anything was actually wrong.
+    if (value.hasError && !_hasError) {
+      setState(() {
+        _hasError = true;
+        _errorDescription = value.errorDescription;
+      });
+      return;
+    }
+
     if (value.isPlaying != _isPlaying) {
       setState(() => _isPlaying = value.isPlaying);
+    }
+    if (value.isBuffering != _isBuffering) {
+      setState(() => _isBuffering = value.isBuffering);
     }
 
     // Fire the completion callback once, right as a non-looping video
@@ -131,7 +171,23 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
       return Container(
         color: AppColors.surfaceBlue,
         alignment: Alignment.center,
-        child: const Icon(Icons.error_outline, color: AppColors.mutedWhite, size: 32),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.mutedWhite, size: 32),
+            if (_errorDescription != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _errorDescription!,
+                style: const TextStyle(color: AppColors.mutedWhite, fontSize: 11),
+                textAlign: TextAlign.center,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
       );
     }
 
@@ -176,7 +232,13 @@ class _MediaVideoPlayerState extends State<MediaVideoPlayer> {
               ),
             ),
           ),
-          if (!_isPlaying)
+          if (!_isPlaying && _isBuffering)
+            const SizedBox(
+              height: 32,
+              width: 32,
+              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+            )
+          else if (!_isPlaying)
             Container(
               decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
               padding: const EdgeInsets.all(10),
