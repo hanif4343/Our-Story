@@ -166,7 +166,10 @@ class _AudioTrimEditorState extends State<AudioTrimEditor> {
     final candidate = _playhead > _start + const Duration(milliseconds: 300) ? _playhead : _start + const Duration(milliseconds: 300);
     if (candidate == _end || candidate > _total) return;
     _pushHistory();
-    setState(() => _end = candidate.clamp(Duration.zero, _total));
+    final clamped = candidate < Duration.zero
+        ? Duration.zero
+        : (candidate > _total ? _total : candidate);
+    setState(() => _end = clamped);
   }
 
   String _format(Duration d) {
