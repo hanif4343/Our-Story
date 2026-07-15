@@ -11,7 +11,6 @@ import '../../../media/presentation/providers/media_providers.dart';
 import '../../domain/entities/scene.dart';
 import '../viewmodels/scene_editor_viewmodel.dart';
 import '../widgets/animation_selector.dart';
-import '../widgets/background_selector.dart';
 import '../widgets/chapter_picker_field.dart';
 import '../widgets/letter_editor_section.dart';
 import '../widgets/media_picker_section.dart';
@@ -245,9 +244,11 @@ class _SceneEditorScreenState extends ConsumerState<SceneEditorScreen> {
           const SizedBox(height: 24),
           TransitionSelector(selected: state.transitionType, onChanged: viewModel.setTransitionType),
           const SizedBox(height: 24),
-          BackgroundSelector(selected: state.backgroundType, onChanged: viewModel.setBackgroundType),
-          const SizedBox(height: 24),
-          _DurationField(duration: state.displayDuration, onChanged: viewModel.setDisplayDuration),
+          _DurationField(
+            duration: state.displayDuration,
+            hasVideo: state.videoPaths.isNotEmpty,
+            onChanged: viewModel.setDisplayDuration,
+          ),
           if (state.saveStatus == SceneEditorSaveStatus.error && state.errorMessage != null) ...[
             const SizedBox(height: 16),
             Text(state.errorMessage!, style: const TextStyle(color: AppColors.error)),
@@ -398,8 +399,9 @@ class _DatePickerField extends StatelessWidget {
 
 class _DurationField extends StatelessWidget {
   final Duration duration;
+  final bool hasVideo;
   final ValueChanged<Duration> onChanged;
-  const _DurationField({required this.duration, required this.onChanged});
+  const _DurationField({required this.duration, required this.hasVideo, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -416,6 +418,11 @@ class _DurationField extends StatelessWidget {
           label: '${duration.inSeconds}s',
           onChanged: (value) => onChanged(Duration(seconds: value.round())),
         ),
+        if (hasVideo)
+          Text(
+            'This scene has a video, so it\'ll play for the video\'s full length in Story Mode instead — this setting only applies to photo/text scenes.',
+            style: AppTextStyles.bodyMedium.copyWith(fontSize: 11, color: AppColors.mutedWhite),
+          ),
       ],
     );
   }
