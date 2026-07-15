@@ -112,6 +112,8 @@ class _SceneEditorScreenState extends ConsumerState<SceneEditorScreen> {
       voiceRecordingPath: state.voiceRecordingPath,
       voiceNote: state.voiceNote,
       musicPath: state.musicPath,
+      musicTrimStart: state.musicTrimStart,
+      musicTrimEnd: state.musicTrimEnd,
       animationType: state.animationType,
       transitionType: state.transitionType,
       backgroundType: state.backgroundType,
@@ -223,6 +225,9 @@ class _SceneEditorScreenState extends ConsumerState<SceneEditorScreen> {
             selectedPath: state.musicPath,
             onPick: () => _pickMusic(viewModel),
             onClear: () => viewModel.setMusicPath(null),
+            trimStart: state.musicTrimStart,
+            trimEnd: state.musicTrimEnd,
+            onTrimChanged: (start, end) => viewModel.setMusicTrim(start: start, end: end),
           ),
           const SizedBox(height: 24),
           VoiceRecorderWidget(
