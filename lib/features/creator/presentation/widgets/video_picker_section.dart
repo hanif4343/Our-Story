@@ -70,14 +70,22 @@ class VideoPickerSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Videos', style: AppTextStyles.label),
+        const Text('Videos', style: AppTextStyles.label),
         const SizedBox(height: 10),
         SizedBox(
           height: 90,
           child: onReorder != null && videoPaths.isNotEmpty
               ? ReorderableListView(
                   scrollDirection: Axis.horizontal,
-                  onReorder: onReorder!,
+                  onReorderItem: (oldIndex, newIndex) {
+                    // onReorderItem already adjusts newIndex for the
+                    // removed item at oldIndex; translate back to the
+                    // classic (oldIndex, newIndex) shape so the existing
+                    // "if (newIndex > oldIndex) newIndex -= 1" logic in
+                    // the view model keeps working unchanged.
+                    final legacyNewIndex = newIndex >= oldIndex ? newIndex + 1 : newIndex;
+                    onReorder!(oldIndex, legacyNewIndex);
+                  },
                   footer: GestureDetector(
                     key: const ValueKey('add-video-button'),
                     onTap: () => _pickVideo(context, ref),
