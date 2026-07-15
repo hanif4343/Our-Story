@@ -76,9 +76,9 @@ class _CinematicTimelineScreenState extends ConsumerState<CinematicTimelineScree
       backgroundColor: AppColors.midnightBlue,
       appBar: AppBar(title: const Text('Cinematic Timeline')),
       body: chapters.isEmpty
-          ? Center(
+          ? const Center(
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: EdgeInsets.all(32),
                 child: Text(
                   'Write some scenes and group them into chapters to see your journey unfold here.',
                   style: AppTextStyles.bodyMedium,
