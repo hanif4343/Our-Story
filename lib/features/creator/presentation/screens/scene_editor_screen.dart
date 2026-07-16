@@ -243,12 +243,6 @@ class _SceneEditorScreenState extends ConsumerState<SceneEditorScreen> {
           AnimationSelector(selected: state.animationType, onChanged: viewModel.setAnimationType),
           const SizedBox(height: 24),
           TransitionSelector(selected: state.transitionType, onChanged: viewModel.setTransitionType),
-          const SizedBox(height: 24),
-          _DurationField(
-            duration: state.displayDuration,
-            hasVideo: state.videoPaths.isNotEmpty,
-            onChanged: viewModel.setDisplayDuration,
-          ),
           if (state.saveStatus == SceneEditorSaveStatus.error && state.errorMessage != null) ...[
             const SizedBox(height: 16),
             Text(state.errorMessage!, style: const TextStyle(color: AppColors.error)),
@@ -411,33 +405,4 @@ class _DatePickerField extends StatelessWidget {
   }
 }
 
-class _DurationField extends StatelessWidget {
-  final Duration duration;
-  final bool hasVideo;
-  final ValueChanged<Duration> onChanged;
-  const _DurationField({required this.duration, required this.hasVideo, required this.onChanged});
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Scene Duration in Story Mode', style: AppTextStyles.label),
-        Slider(
-          value: duration.inSeconds.toDouble().clamp(3, 20),
-          min: 3,
-          max: 20,
-          divisions: 17,
-          activeColor: AppColors.gold,
-          label: '${duration.inSeconds}s',
-          onChanged: (value) => onChanged(Duration(seconds: value.round())),
-        ),
-        if (hasVideo)
-          Text(
-            'This scene has a video, so it\'ll play for the video\'s full length in Story Mode instead — this setting only applies to photo/text scenes.',
-            style: AppTextStyles.bodyMedium.copyWith(fontSize: 11, color: AppColors.mutedWhite),
-          ),
-      ],
-    );
-  }
-}
