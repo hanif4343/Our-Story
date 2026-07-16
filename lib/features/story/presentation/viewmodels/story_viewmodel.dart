@@ -62,7 +62,8 @@ class StoryState {
 
 /// Drives the cinematic autoplay engine: loads the timeline once, then
 /// advances scene-by-scene on a timer sized to each scene's
-/// `displayDuration`, exactly like a movie player. Story Mode screens
+/// `effectiveDisplayDuration` (5 seconds per photo, or a video's own
+/// length), exactly like a movie player. Story Mode screens
 /// only render [StoryState.currentScene] — all sequencing logic lives
 /// here, not in the widget tree.
 ///
@@ -110,9 +111,10 @@ class StoryViewModel extends StateNotifier<StoryState> {
     // A scene with an attached video plays out that video's own full
     // length — advancement is driven by [onVideoFinished] once it
     // actually finishes playing, not a fixed timer. Only photo/text
-    // scenes use the Creator's chosen `displayDuration`.
+    // scenes use the automatic 5-seconds-per-photo duration (see
+    // [Scene.effectiveDisplayDuration]).
     if (scene.videoPaths.isNotEmpty) return;
-    _autoAdvanceTimer = Timer(scene.displayDuration, _advance);
+    _autoAdvanceTimer = Timer(scene.effectiveDisplayDuration, _advance);
   }
 
   /// Called by the Story Player when the current scene's background
