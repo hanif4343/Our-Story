@@ -20,7 +20,7 @@ class SceneEditorState {
   final String? id;
   final String title;
   final String subtitle;
-  final DateTime date;
+  final DateTime? date;
   final int year;
   final String chapter;
   final String? chapterId;
@@ -49,7 +49,7 @@ class SceneEditorState {
     this.id,
     this.title = '',
     this.subtitle = '',
-    required this.date,
+    this.date,
     int? year,
     this.chapter = '',
     this.chapterId,
@@ -110,6 +110,7 @@ class SceneEditorState {
     String? title,
     String? subtitle,
     DateTime? date,
+    bool clearDate = false,
     int? year,
     String? chapter,
     String? chapterId,
@@ -144,7 +145,7 @@ class SceneEditorState {
       id: applyIdOverride ? id : this.id,
       title: title ?? this.title,
       subtitle: subtitle ?? this.subtitle,
-      date: date ?? this.date,
+      date: clearDate ? null : (date ?? this.date),
       year: year ?? this.year,
       chapter: chapter ?? this.chapter,
       chapterId: clearChapterId ? null : (chapterId ?? this.chapterId),
@@ -193,6 +194,14 @@ class SceneEditorViewModel extends StateNotifier<SceneEditorState> {
 
   void setDate(DateTime value) {
     state = state.copyWith(date: value, year: state.year == 0 ? value.year : state.year);
+    _scheduleAutoSave();
+  }
+
+  /// Unsets the scene's date (v1.7.0 — date is optional, no longer
+  /// auto-selected for new scenes). Leaves [SceneEditorState.year]
+  /// untouched, since it's an independent, freely-editable field.
+  void clearDate() {
+    state = state.copyWith(clearDate: true);
     _scheduleAutoSave();
   }
 
@@ -417,7 +426,7 @@ class SceneEditorViewModel extends StateNotifier<SceneEditorState> {
       title: state.title.trim(),
       subtitle: state.subtitle.trim(),
       date: state.date,
-      year: state.year == 0 ? state.date.year : state.year,
+      year: state.year == 0 ? (state.date?.year ?? 0) : state.year,
       chapter: state.chapter.trim(),
       chapterId: state.chapterId,
       storyText: state.storyText.trim(),
@@ -471,6 +480,6 @@ class SceneEditorViewModel extends StateNotifier<SceneEditorState> {
 final sceneEditorViewModelProvider =
     StateNotifierProvider.family<SceneEditorViewModel, SceneEditorState, Scene?>((ref, scene) {
   final repository = ref.watch(sceneRepositoryForEditorProvider);
-  final initial = scene != null ? SceneEditorState.fromScene(scene) : SceneEditorState(date: DateTime.now());
+  final initial = scene != null ? SceneEditorState.fromScene(scene) : const SceneEditorState();
   return SceneEditorViewModel(CreateScene(repository), UpdateScene(repository), initial);
 });
