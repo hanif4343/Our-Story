@@ -170,11 +170,12 @@ class _AnniversaryCountdown extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final journey = ref.watch(journeyViewModelProvider);
     final referenceDate = journey?.weddingDate ?? journey?.startDate;
-    if (referenceDate == null) return const SizedBox.shrink();
+    final sceneDate = scene.date;
+    if (referenceDate == null || sceneDate == null) return const SizedBox.shrink();
 
-    var years = scene.date.year - referenceDate.year;
-    final hasHadAnniversaryThisYear = scene.date.month > referenceDate.month ||
-        (scene.date.month == referenceDate.month && scene.date.day >= referenceDate.day);
+    var years = sceneDate.year - referenceDate.year;
+    final hasHadAnniversaryThisYear = sceneDate.month > referenceDate.month ||
+        (sceneDate.month == referenceDate.month && sceneDate.day >= referenceDate.day);
     if (!hasHadAnniversaryThisYear) years -= 1;
     years = years.clamp(0, 200);
 
