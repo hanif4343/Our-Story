@@ -24,7 +24,7 @@ class SceneModel extends HiveObject {
   String title;
 
   @HiveField(3)
-  DateTime date;
+  DateTime? date;
 
   @HiveField(4)
   String storyText;
@@ -102,7 +102,7 @@ class SceneModel extends HiveObject {
     required this.order,
     required this.title,
     this.subtitle = '',
-    required this.date,
+    this.date,
     int? year,
     this.chapter = '',
     this.chapterId,
@@ -125,7 +125,7 @@ class SceneModel extends HiveObject {
     this.milestoneType = SceneMilestoneType.none,
     required this.createdAt,
     required this.updatedAt,
-  }) : year = year ?? date.year;
+  }) : year = year ?? (date?.year ?? 0);
 
   factory SceneModel.fromEntity(Scene scene) {
     return SceneModel(
@@ -204,7 +204,7 @@ class SceneModelAdapter extends TypeAdapter<SceneModel> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numFields; i++) reader.readByte(): reader.read(),
     };
-    final date = fields[3] as DateTime;
+    final date = fields[3] as DateTime?;
     return SceneModel(
       id: fields[0] as String,
       order: fields[1] as int,
@@ -227,7 +227,7 @@ class SceneModelAdapter extends TypeAdapter<SceneModel> {
       // older version of the app still loads without error — no manual
       // migration step required, ever.
       subtitle: (fields[16] as String?) ?? '',
-      year: (fields[17] as int?) ?? date.year,
+      year: (fields[17] as int?) ?? (date?.year ?? 0),
       chapter: (fields[18] as String?) ?? '',
       isFavorite: (fields[19] as bool?) ?? false,
       tags: fields[20] != null ? (fields[20] as List).cast<String>() : const [],
