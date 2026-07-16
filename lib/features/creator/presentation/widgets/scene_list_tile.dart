@@ -58,7 +58,7 @@ class SceneListTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(DateFormatter.scene(scene.date), style: AppTextStyles.label),
+            Text(scene.date != null ? DateFormatter.scene(scene.date!) : 'No date', style: AppTextStyles.label),
             if (scene.chapter.trim().isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
