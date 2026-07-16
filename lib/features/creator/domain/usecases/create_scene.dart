@@ -11,7 +11,13 @@ class CreateScene {
 
   Future<Result<Scene>> call(Scene draft) async {
     final existing = repository.getAllScenes();
-    final nextOrder = existing.dataOrNull?.length ?? 0;
+    final scenes = existing.dataOrNull ?? const <Scene>[];
+    // Base the new order on the highest existing order + 1, not the raw
+    // count. If any scenes were ever deleted, or two scenes ended up
+    // sharing an order value (e.g. from a past race condition), using
+    // the count alone could assign an order that collides with one
+    // already in use.
+    final nextOrder = scenes.isEmpty ? 0 : (scenes.map((s) => s.order).reduce((a, b) => a > b ? a : b) + 1);
 
     final now = DateTime.now();
     final scene = draft.copyWith(
