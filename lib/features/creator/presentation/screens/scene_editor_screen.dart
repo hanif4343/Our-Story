@@ -101,7 +101,7 @@ class _SceneEditorScreenState extends ConsumerState<SceneEditorScreen> {
       title: state.title.trim().isEmpty ? 'Untitled Scene' : state.title.trim(),
       subtitle: state.subtitle.trim(),
       date: state.date,
-      year: state.year == 0 ? state.date.year : state.year,
+      year: state.year == 0 ? (state.date?.year ?? 0) : state.year,
       chapter: state.chapter.trim(),
       chapterId: state.chapterId,
       storyText: state.storyText.trim(),
@@ -184,7 +184,7 @@ class _SceneEditorScreenState extends ConsumerState<SceneEditorScreen> {
             onChanged: viewModel.setSubtitle,
           ),
           const SizedBox(height: 18),
-          _DatePickerField(date: state.date, onPick: viewModel.setDate),
+          _DatePickerField(date: state.date, onPick: viewModel.setDate, onClear: viewModel.clearDate),
           const SizedBox(height: 18),
           YearChapterFields(
             year: state.year,
@@ -365,18 +365,20 @@ class _ValidationWarnings extends StatelessWidget {
 }
 
 class _DatePickerField extends StatelessWidget {
-  final DateTime date;
+  final DateTime? date;
   final ValueChanged<DateTime> onPick;
-  const _DatePickerField({required this.date, required this.onPick});
+  final VoidCallback onClear;
+  const _DatePickerField({required this.date, required this.onPick, required this.onClear});
 
   @override
   Widget build(BuildContext context) {
+    final hasDate = date != null;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () async {
         final picked = await showDatePicker(
           context: context,
-          initialDate: date,
+          initialDate: date ?? DateTime.now(),
           firstDate: DateTime(2010),
           lastDate: DateTime(2100),
         );
@@ -389,7 +391,19 @@ class _DatePickerField extends StatelessWidget {
           children: [
             const Icon(Icons.calendar_today_outlined, color: AppColors.gold, size: 18),
             const SizedBox(width: 12),
-            Text(DateFormatter.scene(date), style: AppTextStyles.bodyMedium.copyWith(color: Colors.white)),
+            Expanded(
+              child: Text(
+                hasDate ? DateFormatter.scene(date!) : 'No date set (optional)',
+                style: AppTextStyles.bodyMedium.copyWith(color: hasDate ? Colors.white : AppColors.mutedWhite),
+              ),
+            ),
+            if (hasDate)
+              IconButton(
+                icon: const Icon(Icons.close, size: 18, color: AppColors.mutedWhite),
+                tooltip: 'Clear date',
+                onPressed: onClear,
+                visualDensity: VisualDensity.compact,
+              ),
           ],
         ),
       ),
