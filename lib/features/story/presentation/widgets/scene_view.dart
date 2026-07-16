@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/utils/date_formatter.dart';
 import '../../../animation/animation_overlay_factory.dart';
 import '../../../creator/domain/entities/background_type.dart';
 import '../../../creator/domain/entities/scene.dart';
@@ -119,8 +118,6 @@ class SceneView extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(DateFormatter.scene(scene.date), style: AppTextStyles.sceneDate, textAlign: TextAlign.center),
-                    const SizedBox(height: 14),
                     Flexible(
                       child: SingleChildScrollView(
                         child: scene.letter != null
