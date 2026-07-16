@@ -18,7 +18,6 @@ import 'fireworks_overlay.dart';
 import 'floating_photos_overlay.dart';
 import 'golden_particles_overlay.dart';
 import 'heartbeat_pulse_overlay.dart';
-import 'ring_sparkle_overlay.dart';
 
 /// Composes the themed foreground overlay + background treatment for a
 /// scene's [SceneMilestoneType] (v1.3.0 Cinematic Experience Engine).
@@ -46,7 +45,6 @@ class MilestonePresentation extends StatelessWidget {
           children: [
             RoseOverlay(particleCount: 10),
             HeartOverlay(particleCount: 10),
-            RingSparkleOverlay(),
           ],
         );
 
