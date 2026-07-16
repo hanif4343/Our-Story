@@ -477,8 +477,19 @@ class SceneEditorViewModel extends StateNotifier<SceneEditorState> {
 }
 
 /// Family provider: pass an existing [Scene] to edit, or `null` to create.
+///
+/// `autoDispose` is critical here (v1.7.1 bugfix). Without it, every
+/// "New Scene" screen shares the *same* cached instance keyed by `null`
+/// for the app's whole lifetime. After the first new scene autosaves,
+/// [SceneEditorState.id] gets set on that shared instance — so the
+/// *next* time the Creator opens "New Scene", they land back on that
+/// same id-carrying state instead of a blank one, and further typing
+/// quietly calls [UpdateScene] on the previous scene instead of
+/// [CreateScene], overwriting it. `autoDispose` guarantees a fresh,
+/// blank state (and a fresh id) every time the editor screen is opened
+/// for a new scene.
 final sceneEditorViewModelProvider =
-    StateNotifierProvider.family<SceneEditorViewModel, SceneEditorState, Scene?>((ref, scene) {
+    StateNotifierProvider.autoDispose.family<SceneEditorViewModel, SceneEditorState, Scene?>((ref, scene) {
   final repository = ref.watch(sceneRepositoryForEditorProvider);
   final initial = scene != null ? SceneEditorState.fromScene(scene) : const SceneEditorState();
   return SceneEditorViewModel(CreateScene(repository), UpdateScene(repository), initial);
