@@ -148,6 +148,20 @@ class SceneView extends StatelessWidget {
     // as a fallback for scenes with no media attached at all. This way
     // adding a photo or video to a scene is enough for it to actually
     // play; there's no separate switch to remember to flip.
+    if (scene.videoPaths.isNotEmpty && scene.photoPaths.isNotEmpty) {
+      // A scene with both photos and a video plays all of it, in
+      // order: photos first (same crossfade slideshow as a photo-only
+      // scene), then the video — instead of the video silently
+      // replacing the photos, which used to hide every photo the
+      // Creator attached the moment a video was also added.
+      return _PhotoThenVideoBackground(
+        photoPaths: scene.photoPaths,
+        videoPath: scene.videoPaths.first,
+        fallbackGradient: _moodGradient,
+        onVideoEnded: onVideoEnded,
+        isPaused: isPaused,
+      );
+    }
     if (scene.videoPaths.isNotEmpty) {
       // The video is never wrapped in the extra "blurred" treatment
       // below — [MediaVideoPlayer] renders full-bleed on its own, and
@@ -168,7 +182,7 @@ class SceneView extends StatelessWidget {
       // sharp foreground too, leaving the entire frame looking out of
       // focus. So photos, like video, skip the extra "blurred" pass
       // and keep their own intentional look regardless of milestone.
-      return (scene.milestoneType == SceneMilestoneType.wedding && scene.photoPaths.length > 1)
+      return (scene.photoPaths.length > 1)
           ? _PhotoSlideshowBackground(photoPaths: scene.photoPaths, fallbackGradient: _moodGradient)
           : _CoverPhoto(path: scene.photoPaths.first, fallbackGradient: _moodGradient);
     }
@@ -271,9 +285,11 @@ class _CameraZoomBackgroundState extends State<_CameraZoomBackground> with Singl
   }
 }
 
-/// Auto-cycles through a scene's photos with a soft crossfade — the
-/// Wedding milestone's "photo slideshow", used automatically whenever a
-/// wedding-milestone scene has more than one photo attached.
+/// Auto-cycles through a scene's photos with a soft crossfade — used
+/// automatically whenever a scene has more than one photo attached, so
+/// every photo the Creator added actually gets shown, not just the
+/// first one. Each photo holds for 5 seconds before smoothly fading
+/// into the next.
 class _PhotoSlideshowBackground extends StatefulWidget {
   final List<String> photoPaths;
   final Gradient fallbackGradient;
@@ -290,7 +306,7 @@ class _PhotoSlideshowBackgroundState extends State<_PhotoSlideshowBackground> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
       setState(() => _index = (_index + 1) % widget.photoPaths.length);
     });
@@ -305,10 +321,99 @@ class _PhotoSlideshowBackgroundState extends State<_PhotoSlideshowBackground> {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 1200),
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        fit: StackFit.expand,
+        children: [...previousChildren, if (currentChild != null) currentChild],
+      ),
       child: _CoverPhoto(
         key: ValueKey(widget.photoPaths[_index]),
         path: widget.photoPaths[_index],
+        fallbackGradient: widget.fallbackGradient,
+      ),
+    );
+  }
+}
+
+/// Plays a scene's photos and video as one continuous sequence: each
+/// photo holds for 5 seconds with a soft crossfade (identical timing
+/// to [_PhotoSlideshowBackground]), and once every photo has had its
+/// turn, the scene's video starts playing automatically. Used whenever
+/// a scene has both media types attached, so nothing the Creator added
+/// gets silently skipped.
+class _PhotoThenVideoBackground extends StatefulWidget {
+  final List<String> photoPaths;
+  final String videoPath;
+  final Gradient fallbackGradient;
+  final VoidCallback? onVideoEnded;
+  final bool? isPaused;
+
+  const _PhotoThenVideoBackground({
+    required this.photoPaths,
+    required this.videoPath,
+    required this.fallbackGradient,
+    this.onVideoEnded,
+    this.isPaused,
+  });
+
+  @override
+  State<_PhotoThenVideoBackground> createState() => _PhotoThenVideoBackgroundState();
+}
+
+class _PhotoThenVideoBackgroundState extends State<_PhotoThenVideoBackground> {
+  int _photoIndex = 0;
+  bool _showingVideo = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleNextPhoto();
+  }
+
+  void _scheduleNextPhoto() {
+    _timer = Timer(const Duration(seconds: 5), () {
+      if (!mounted) return;
+      final isLastPhoto = _photoIndex >= widget.photoPaths.length - 1;
+      if (isLastPhoto) {
+        setState(() => _showingVideo = true);
+      } else {
+        setState(() => _photoIndex++);
+        _scheduleNextPhoto();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showingVideo) {
+      return MediaVideoPlayer(
+        videoPath: widget.videoPath,
+        autoPlay: true,
+        loop: widget.onVideoEnded == null,
+        onEnded: widget.onVideoEnded,
+        isPaused: widget.isPaused,
+      );
+    }
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 1200),
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        fit: StackFit.expand,
+        children: [...previousChildren, if (currentChild != null) currentChild],
+      ),
+      child: _CoverPhoto(
+        key: ValueKey(widget.photoPaths[_photoIndex]),
+        path: widget.photoPaths[_photoIndex],
         fallbackGradient: widget.fallbackGradient,
       ),
     );
