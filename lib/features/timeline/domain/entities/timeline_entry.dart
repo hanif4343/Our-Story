@@ -7,14 +7,14 @@ class TimelineEntry extends Equatable {
   final String sceneId;
   final int order;
   final String title;
-  final DateTime date;
+  final DateTime? date;
   final String? thumbnailPath;
 
   const TimelineEntry({
     required this.sceneId,
     required this.order,
     required this.title,
-    required this.date,
+    this.date,
     this.thumbnailPath,
   });
 
