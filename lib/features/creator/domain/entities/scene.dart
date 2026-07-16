@@ -17,7 +17,9 @@ class Scene extends Equatable {
   /// Short line shown beneath the title (e.g. "The day everything changed").
   final String subtitle;
 
-  final DateTime date;
+  /// Optional — a scene doesn't have to be pinned to a real calendar
+  /// date. `null` means "no date set" and is a perfectly valid state.
+  final DateTime? date;
 
   /// The story's own narrative year for this scene (usually `date.year`,
   /// but kept independent so a Creator can group scenes thematically even
@@ -91,7 +93,7 @@ class Scene extends Equatable {
     required this.order,
     required this.title,
     this.subtitle = '',
-    required this.date,
+    this.date,
     int? year,
     this.chapter = '',
     this.chapterId,
@@ -114,7 +116,7 @@ class Scene extends Equatable {
     this.milestoneType = SceneMilestoneType.none,
     required this.createdAt,
     required this.updatedAt,
-  }) : year = year ?? date.year;
+  }) : year = year ?? (date?.year ?? 0);
 
   Scene copyWith({
     String? id,
@@ -122,6 +124,7 @@ class Scene extends Equatable {
     String? title,
     String? subtitle,
     DateTime? date,
+    bool clearDate = false,
     int? year,
     String? chapter,
     String? chapterId,
@@ -151,7 +154,7 @@ class Scene extends Equatable {
       order: order ?? this.order,
       title: title ?? this.title,
       subtitle: subtitle ?? this.subtitle,
-      date: date ?? this.date,
+      date: clearDate ? null : (date ?? this.date),
       year: year ?? this.year,
       chapter: chapter ?? this.chapter,
       chapterId: chapterId ?? this.chapterId,
