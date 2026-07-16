@@ -72,7 +72,30 @@ class Scene extends Equatable {
   final String? backgroundColorHex;
 
   /// How long this scene stays on screen during autoplay in Story Mode.
+  /// Kept only for backward-compatible storage/migration — Story Mode no
+  /// longer schedules its autoplay timer off this value directly (see
+  /// [effectiveDisplayDuration]). There's no Creator-facing control for
+  /// it anymore.
   final Duration displayDuration;
+
+  /// Fixed hold time given to every single photo during autoplay —
+  /// the whole system now runs on this instead of a Creator-set timer.
+  static const Duration perPhotoDuration = Duration(seconds: 5);
+
+  /// The *actual* time Story Mode holds this scene on screen: 5 seconds
+  /// per attached photo (matching [perPhotoDuration] — the same pace
+  /// [SceneView]'s photo slideshow already cycles at), so a scene never
+  /// advances before every photo the Creator added has had its turn.
+  /// A scene with a video ignores this entirely — its own length drives
+  /// advancement instead (see [StoryViewModel._scheduleNext]). A scene
+  /// with neither photos nor a video (pure text/letter) falls back to
+  /// [displayDuration] since there's nothing to count.
+  Duration get effectiveDisplayDuration {
+    if (photoPaths.isNotEmpty) {
+      return perPhotoDuration * photoPaths.length;
+    }
+    return displayDuration;
+  }
 
   /// Whether the Creator has marked this scene as a favorite/highlight.
   final bool isFavorite;
